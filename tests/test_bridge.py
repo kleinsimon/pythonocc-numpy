@@ -118,6 +118,23 @@ def test_helper_create_from_numpy_complete():
     p_last = occ_array.Vertice(num_points)
     assert np.isclose(p_last.Z(), np_coords[-1, 2])
 
+def test_helper_populate_from_numpy():
+    """Testet den End-to-End Workflow über die Factory-Methode des Helpers."""
+    num_points = 2_000
+    np_coords = np.random.rand(num_points, 3).astype(np.float64)
+    np_colors = np.random.rand(num_points, 3).astype(np.float64)
+
+    occ_array = Graphic3d_ArrayOfPoints(num_points, 2)
+    Graphic3d_ArrayOfPoints_Helper.set_coordinates(occ_array, np_coords)
+    Graphic3d_ArrayOfPoints_Helper.set_colors(occ_array, np_colors)
+
+    assert occ_array.VertexNumberAllocated() == num_points
+    assert occ_array.HasVertexColors() is True
+
+    # Stichprobe am Ende
+    p_last = occ_array.Vertice(num_points)
+    assert np.isclose(p_last.Z(), np_coords[-1, 2])
+
 
 def test_helper_handles_non_contiguous_arrays():
     """Der Helper muss auch mit zerschnittenen (slicing) oder float32 Arrays klarkommen."""

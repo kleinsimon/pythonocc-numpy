@@ -1,0 +1,53 @@
+name: Build and Upload Wheels to GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    # Der Name im GitHub-Interface zeigt jetzt direkt an, welche Version gebaut wird
+    name: Build Windows Wheel (Python ${{ matrix.python-version }})
+    runs-on: windows-latest
+
+    # --- DIE BUILD-MATRIX ---
+    strategy:
+      # Verhindert, dass alle Builds abbrechen, nur weil z.B. Python 3.13 fehlschlägt
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    # ------------------------
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Conda Umgebung einrichten (Python ${{ matrix.python-version }})
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          # Hier wird dynamisch die Version aus der Matrix eingesetzt:
+          python-version: ${{ matrix.python-version }}
+          channels: conda-forge,defaults
+          channel-priority: true
+          activate-environment: occ-bridge-dev
+          environment-file: environment.yml
+
+      - name: Wheel bauen
+        shell: powershell
+        run: |
+          conda activate occ-bridge-dev
+          python -m build --wheel
+
+      - name: Wheel an das GitHub Release anhängen
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: dist/*.whl
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

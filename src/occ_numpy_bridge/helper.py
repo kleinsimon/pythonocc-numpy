@@ -88,7 +88,7 @@ class Graphic3d_ArrayOfPoints_Helper:
         if not isinstance(np_coords, np.ndarray) or np_coords.dtype != np.float64:
             np_coords = np.ascontiguousarray(np_coords, dtype=np.float64)
 
-        cpp_ptr = Graphic3d_ArrayOfPointsHelper._get_cpp_pointer(occ_array)
+        cpp_ptr = Graphic3d_ArrayOfPoints_Helper._get_cpp_pointer(occ_array)
         occ_bridge.graphic3d.fill_array_of_points_coords(cpp_ptr, np_coords)
 
     @staticmethod
@@ -109,7 +109,7 @@ class Graphic3d_ArrayOfPoints_Helper:
         if not isinstance(np_colors, np.ndarray) or np_colors.dtype != np.float64:
             np_colors = np.ascontiguousarray(np_colors, dtype=np.float64)
 
-        cpp_ptr = Graphic3d_ArrayOfPointsHelper._get_cpp_pointer(occ_array)
+        cpp_ptr = Graphic3d_ArrayOfPoints_Helper._get_cpp_pointer(occ_array)
         occ_bridge.graphic3d.fill_array_of_points_colors(cpp_ptr, np_colors)
 
     @classmethod
