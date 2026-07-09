@@ -8,8 +8,7 @@ import pytest
 import numpy as np
 from OCC.Core.Graphic3d import Graphic3d_ArrayOfPoints
 
-from occ_numpy_bridge import Graphic3d_ArrayOfPoints_Helper
-from occ_numpy_bridge import occ_bridge
+from occ_numpy_bridge import occ_bridge, Graphic3d_ArrayOfPoints_Helper
 
 
 # --- HILFSFUNKTIONEN FÜR DIE TESTS ---
@@ -74,7 +73,7 @@ def test_invalid_numpy_shape_raises_error():
     occ_array = Graphic3d_ArrayOfPoints(100, 0)
     cpp_ptr = get_cpp_ptr(occ_array)
 
-    with pytest.raises(RuntimeError, match="Form \(N, 3\)"):
+    with pytest.raises(RuntimeError, match="shape \(N, 3\)"):
         occ_bridge.graphic3d.fill_array_of_points_coords(cpp_ptr, np_wrong_shape)
 
 
@@ -85,7 +84,7 @@ def test_buffer_overflow_protection():
     occ_array = Graphic3d_ArrayOfPoints(100, 0)
     cpp_ptr = get_cpp_ptr(occ_array)
 
-    with pytest.raises(RuntimeError, match="Nicht genug Speicher"):
+    with pytest.raises(RuntimeError, match="Insufficient vertex memory"):
         occ_bridge.graphic3d.fill_array_of_points_coords(cpp_ptr, np_large)
 
 
@@ -96,7 +95,7 @@ def test_colors_without_flag_raises_error():
     occ_array = Graphic3d_ArrayOfPoints(50, 0)
     cpp_ptr = get_cpp_ptr(occ_array)
 
-    with pytest.raises(RuntimeError, match="ohne Farbunterstützung erstellt"):
+    with pytest.raises(RuntimeError, match="without color support"):
         occ_bridge.graphic3d.fill_array_of_points_colors(cpp_ptr, np_colors)
 
 
