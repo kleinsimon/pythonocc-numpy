@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "occ-numpy-bridge"
-version = "0.1.0"
+version = "0.1.2"
 description = "Fast Zero-Copy Bridge between pythonocc-core und NumPy"
 readme = "README.md"
 authors = [
@@ -24,3 +24,7 @@ cmake.version = ">=3.18"
 cmake.build-type = "Release"
 wheel.packages = ["src/occ_numpy_bridge"]
 install.components = ["python_modules"]
+
+[project.urls]
+Homepage = "https://github.com/kleinsimon/pythonocc-numpy"
+Repository = "https://github.com/kleinsimon/pythonocc-numpy"
