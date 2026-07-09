@@ -4,33 +4,33 @@ project(OccNumpyBridge VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 1. Python & pybind11 finden
-# Tipp: Wenn du Conda nutzt, aktiviere deine Environment VOR dem cmake Aufruf!
-find_package(Python COMPONENTS Interpreter Development REQUIRED)
-
-# Versuche pybind11 über cmake zu finden (oft via conda install pybind11 installiert)
+# Python and pybind11
+find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
 find_package(pybind11 CONFIG REQUIRED)
 
-# 2. OpenCASCADE finden
-# Falls cmake OpenCASCADE nicht automatisch findet, setze beim Build: 
-# -DOpenCASCADE_DIR=/pfad/zu/conda/env/lib/cmake/opencascade
+# OpenCASCADE
 find_package(OpenCASCADE REQUIRED)
 
-# 3. Das Python-Modul erstellen
-pybind11_add_module(occ_bridge src/point_bridge.cpp)
+if(WIN32)
+    link_directories("$ENV{CONDA_PREFIX}/Library/lib")
+    if(OpenCASCADE_LIBRARY_DIR)
+        link_directories(${OpenCASCADE_LIBRARY_DIR})
+    endif()
+endif()
 
-# 4. OpenCASCADE Header und Bibliotheken verlinken
-target_include_directories(occ_bridge PRIVATE ${OpenCASCADE_INCLUDE_DIR})
+pybind11_add_module(occ_bridge src/csrc/point_bridge.cpp)
 
-target_link_directories(occ_bridge PRIVATE 
-    ${OpenCASCADE_LIBRARY_DIR}
-    "$ENV{CONDA_PREFIX}/Library/lib" # Fallback für Windows Conda
+target_include_directories(occ_bridge PRIVATE
+    ${OpenCASCADE_INCLUDE_DIR}
+    "$ENV{CONDA_PREFIX}/Library/include/opencascade"
 )
 
-target_link_libraries(occ_bridge PRIVATE 
-    TKMath 
-    TKKernel 
-    TKService 
-    TKV3d 
+target_link_libraries(occ_bridge PRIVATE
+    TKMath
+    TKernel
+    TKService
+    TKV3d
     TKOpenGl
 )
+
+install(TARGETS occ_bridge DESTINATION occ_numpy_bridge COMPONENT python_modules)

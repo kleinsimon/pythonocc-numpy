@@ -1,0 +1,26 @@
+[build-system]
+requires = ["scikit-build-core>=0.8.0", "pybind11>=2.10.0"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "occ-numpy-bridge"
+version = "0.1.0"
+description = "Fast Zero-Copy Bridge between pythonocc-core und NumPy"
+readme = "README.md"
+authors = [
+    { name = "Simon Klein" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.21.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+# --- SCIKIT-BUILD-CORE KONFIGURATION ---
+[tool.scikit-build]
+cmake.version = ">=3.18"
+cmake.build-type = "Release"
+wheel.packages = ["src/occ_numpy_bridge"]
+install.components = ["python_modules"]
