@@ -135,6 +135,23 @@ def test_helper_populate_from_numpy():
     assert np.isclose(p_last.Z(), np_coords[-1, 2])
 
 
+def test_helper_read_from_numpy():
+    """Testet den End-to-End Workflow über die Factory-Methode des Helpers."""
+    num_points = 2_000
+    np_coords = np.random.rand(num_points, 3).astype(np.float64)
+    np_colors = np.random.rand(num_points, 3).astype(np.float64)
+
+    occ_array = Graphic3d_ArrayOfPoints(num_points, 2)
+    Graphic3d_ArrayOfPoints_Helper.set_coordinates(occ_array, np_coords)
+    Graphic3d_ArrayOfPoints_Helper.set_colors(occ_array, np_colors)
+
+    np_coords_read = Graphic3d_ArrayOfPoints_Helper.get_coordinates(occ_array)
+    np_colors_read = Graphic3d_ArrayOfPoints_Helper.get_colors(occ_array)
+
+    assert np.isclose(np_coords, np_coords_read).all()
+    assert np.isclose(np_colors, np_colors_read, atol=0.01).all()
+
+
 def test_helper_handles_non_contiguous_arrays():
     """Der Helper muss auch mit zerschnittenen (slicing) oder float32 Arrays klarkommen."""
     # Erstelle ein 1000x3 Array, nimm aber via Slicing nur jede zweite Zeile

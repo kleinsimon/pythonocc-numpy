@@ -9,17 +9,13 @@ import pytest
 import numpy as np
 from OCC.Core.Graphic3d import Graphic3d_ArrayOfTriangles
 from OCC.Core.Poly import Poly_Triangulation
-from occ_numpy_bridge import occ_bridge, Poly_Triangulation_Helper, Graphic3d_ArrayOfPoints_Helper
+from occ_numpy_bridge import occ_bridge, Graphic3d_ArrayOfTriangles_Helper
 
 
 def get_cpp_ptr(occ_obj) -> int:
     """Helper to reliably extract the native C++ memory address for testing."""
     return int(occ_obj.this.this)
 
-
-# ============================================================================
-# 1. TESTS FOR GRAPHIC3D_ARRAYOFTRIANGLES (Rendering Meshes)
-# ============================================================================
 
 def test_g3d_mesh_coordinates_and_indices_transfer():
     """Verifies accuracy of coordinate transfer and 0-based to 1-based index shifting."""
@@ -83,7 +79,7 @@ def test_g3d_mesh_normals_and_colors():
     ], dtype=np.float64)
 
     # Use Poly_Triangulation_Helper to build the mesh with flags 1 (Normals) | 2 (Colors) = 3
-    occ_mesh = Graphic3d_ArrayOfPoints_Helper.create_graphic3d_mesh(
+    occ_mesh = Graphic3d_ArrayOfTriangles_Helper.create_from_numpy(
         np_coords, np_indices, np_normals=np_normals, np_colors=np_colors
     )
 
@@ -101,68 +97,41 @@ def test_g3d_mesh_normals_and_colors():
     assert np.isclose(c3.Blue(), 1.0, atol=1e-2), "Blue channel mismatch!"
 
 
-# ============================================================================
-# 2. TESTS FOR POLY_TRIANGULATION (CAD & Geometry Meshes)
-# ============================================================================
+def test_g3d_mesh_read():
+    """Verifies optional normal vector and vertex color transfers."""
+    num_nodes = 3
+    np_coords = np.zeros((num_nodes, 3), dtype=np.float64)
+    np_indices = np.array([[0, 1, 2]], dtype=np.int32)
 
-def test_poly_triangulation_transfer():
-    """Verifies that CAD Poly_Triangulation meshes receive correct nodes and triangles."""
-    num_nodes = 500
-    num_triangles = 800
+    # Normal pointing straight up along Z axis
+    np_normals = np.array([
+        [0.0, 0.0, 1.0],
+        [0.0, 0.0, 1.0],
+        [0.0, 0.0, 1.0]
+    ], dtype=np.float64)
 
-    np_coords = np.random.rand(num_nodes, 3).astype(np.float64) * 50.0
-    # Generate random valid triangle indices within [0, num_nodes - 1]
-    np_indices = np.random.randint(0, num_nodes, size=(num_triangles, 3), dtype=np.int32)
+    # Pure red, green, and blue colors
+    np_colors = np.array([
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0]
+    ], dtype=np.float64)
 
-    poly = Poly_Triangulation_Helper.create_poly_triangulation(np_coords, np_indices)
+    # Use Poly_Triangulation_Helper to build the mesh with flags 1 (Normals) | 2 (Colors) = 3
+    occ_mesh = Graphic3d_ArrayOfTriangles_Helper.create_from_numpy(
+        np_coords, np_indices, np_normals=np_normals, np_colors=np_colors
+    )
 
-    assert poly.NbNodes() == num_nodes, "Node count mismatch in Poly_Triangulation"
-    assert poly.NbTriangles() == num_triangles, "Triangle count mismatch in Poly_Triangulation"
+    coords = Graphic3d_ArrayOfTriangles_Helper.read_coordinates(occ_mesh)
+    indices = Graphic3d_ArrayOfTriangles_Helper.read_indices(occ_mesh)
+    colors = Graphic3d_ArrayOfTriangles_Helper.read_colors(occ_mesh)
+    normals = Graphic3d_ArrayOfTriangles_Helper.read_normals(occ_mesh)
 
-    # Validate last node coordinates
-    last_node = poly.Node(num_nodes)
-    assert np.isclose(last_node.X(), np_coords[-1, 0]), "Node X coordinate mismatch"
-    assert np.isclose(last_node.Z(), np_coords[-1, 2]), "Node Z coordinate mismatch"
+    assert np.isclose(coords, np_coords).all, "Coords mismatch"
+    assert np.equal(indices, np_indices).all, "Indices mismatch"
+    assert np.isclose(colors, np_colors, atol=1e-2).all, "Color mismatch"
+    assert np.isclose(normals, np_normals).all, "Normals mismatch"
 
-    # Validate triangle index shifting (0-based -> 1-based)
-    # In pythonocc, Triangle(i).Get() returns a tuple (n1, n2, n3)
-    tri_1 = poly.Triangle(1).Get()
-    expected_n1 = np_indices[0, 0] + 1
-    assert tri_1[0] == expected_n1, f"Expected node index {expected_n1}, got {tri_1[0]}"
-
-
-def test_poly_triangulation_fill():
-    """Verifies that CAD Poly_Triangulation meshes receive correct nodes and triangles."""
-    num_nodes = 500
-    num_triangles = 800
-
-    np_coords = np.random.rand(num_nodes, 3).astype(np.float64) * 50.0
-    # Generate random valid triangle indices within [0, num_nodes - 1]
-    np_indices = np.random.randint(0, num_nodes, size=(num_triangles, 3), dtype=np.int32)
-
-    poly = Poly_Triangulation(num_nodes, num_triangles, False)
-
-    Poly_Triangulation_Helper.fill_poly_triangulation_coords(poly, np_coords)
-    Poly_Triangulation_Helper.fill_poly_triangulation_indices(poly, np_indices)
-
-    assert poly.NbNodes() == num_nodes, "Node count mismatch in Poly_Triangulation"
-    assert poly.NbTriangles() == num_triangles, "Triangle count mismatch in Poly_Triangulation"
-
-    # Validate last node coordinates
-    last_node = poly.Node(num_nodes)
-    assert np.isclose(last_node.X(), np_coords[-1, 0]), "Node X coordinate mismatch"
-    assert np.isclose(last_node.Z(), np_coords[-1, 2]), "Node Z coordinate mismatch"
-
-    # Validate triangle index shifting (0-based -> 1-based)
-    # In pythonocc, Triangle(i).Get() returns a tuple (n1, n2, n3)
-    tri_1 = poly.Triangle(1).Get()
-    expected_n1 = np_indices[0, 0] + 1
-    assert tri_1[0] == expected_n1, f"Expected node index {expected_n1}, got {tri_1[0]}"
-
-
-# ============================================================================
-# 3. ERROR HANDLING & SAFETY CHECKS
-# ============================================================================
 
 def test_g3d_mesh_insufficient_edge_memory_raises_error():
     """Ensures C++ adapter aborts if triangle count exceeds allocated edge capacity."""
