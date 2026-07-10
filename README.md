@@ -6,6 +6,9 @@ handle large numpy arrays. By now it is rather a proof-of-concept.
 It allows the fast transfer of vertices and colors for selected OpenCascade class instances.
 It links via pybind11 directly against OCC, so the official pythonocc-core binaries can be used.
 
+# Install
+There are some wheels provided under "Releases". Install them via pip.
+
 # Building
 
 since pythonocc-core is only available via conda-forge, you need conda / miniforge to build the wheel.
