@@ -1,8 +1,10 @@
 # pythonocc-numpy
 
-This project aims to provide some helpers for [pythonocc-core](https://github.com/tpaviot/pythonocc-core) to efficiently handle large numpy arrays.
-By now it is rather a proof-of-concept. It allows the fast transfer of vertices and colors for 
-Graphic3d_ArrayOfPoints instances. It links via pybind11 directly against OCC, so the official pythonocc-core binaries can be used.
+This project aims to provide some helpers for [pythonocc-core](https://github.com/tpaviot/pythonocc-core) to efficiently
+handle large numpy arrays. By now it is rather a proof-of-concept.
+
+It allows the fast transfer of vertices and colors for selected OpenCascade class instances.
+It links via pybind11 directly against OCC, so the official pythonocc-core binaries can be used.
 
 # Building
 
@@ -24,6 +26,26 @@ pip install dist/occ_numpy_bridge*.whl
 
 # Usage
 
+## Supported Classes
+
+Read and Write access using numpy arrays
+
+- Graphic3d_ArrayOfPoints
+  - vertex coordinates
+  - vertex colors
+  
+
+- Graphic3d_ArrayOfTriangles
+  - vertex coordinates
+  - vertex colors
+  - vertex normals
+  - face indices
+
+
+- Poly_Triangulation
+  - vertex coords
+  - face indices
+
 ```python
 import numpy as np
 from occ_numpy_bridge import Graphic3d_ArrayOfPoints_Helper
@@ -40,4 +62,8 @@ occ_array = Graphic3d_ArrayOfPoints_Helper.create_from_numpy(np_coords, np_color
 occ_array2 = Graphic3d_ArrayOfPoints(num_points, 2)
 Graphic3d_ArrayOfPoints_Helper.set_coordinates(occ_array2, np_coords)
 Graphic3d_ArrayOfPoints_Helper.set_colors(occ_array2, np_colors)
+
+# read values
+coords = Graphic3d_ArrayOfPoints_Helper.get_coordinates(occ_array2)
+colors = Graphic3d_ArrayOfPoints_Helper.get_colors(occ_array2)
 ```
