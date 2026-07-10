@@ -1,10 +1,3 @@
-"""
-src/occ_numpy_bridge/mesh_helper.py
-
-High-performance Python helper methods for zero-copy transfer of 3D meshes
-from NumPy arrays into OpenCASCADE rendering and geometry objects.
-"""
-
 import numpy as np
 from OCC.Core.Poly import Poly_Triangulation
 from . import occ_bridge
@@ -19,6 +12,9 @@ class Poly_Triangulation_Helper:
     @staticmethod
     def _get_cpp_pointer(occ_obj) -> int:
         """Extracts the underlying C++ pointer from a SWIG wrapper object."""
+        if not isinstance(occ_obj, Poly_Triangulation):
+            raise TypeError("Provided object is not a valid Poly_Triangulation instance!")
+
         try:
             return int(occ_obj.this.this)
         except AttributeError:
@@ -47,18 +43,74 @@ class Poly_Triangulation_Helper:
 
     @classmethod
     def fill_poly_triangulation_coords(cls, poly: Poly_Triangulation, coords: np.ndarray):
-        cpp_ptr = cls._get_cpp_pointer(poly)
+        """
+        Fills the coordinate data for a Poly_Triangulation instance using a given
+        coordinate array. The function utilizes a C++ backend to manage the data
+        population, ensuring a shift in indices from 0-based to 1-based indexing.
 
-        # Populate via C++ (automatically shifts indices from 0-based to 1-based)
+        :param poly: Instance of Poly_Triangulation whose coordinates are to be
+            populated.
+        :param coords: A NumPy ndarray containing the coordinate data to populate.
+        :return: None
+        """
+        cpp_ptr = cls._get_cpp_pointer(poly)
         occ_bridge.mesh.fill_poly_triangulation_coords(cpp_ptr, coords)
 
     @classmethod
+    def get_poly_triangulation_coords(cls, poly: Poly_Triangulation) -> np.ndarray:
+        """
+        Get the triangulation coordinates of a given polygon.
+
+        This method takes a polygon represented by a Poly_Triangulation object and
+        returns its triangulation coordinates in the form of a NumPy array. The
+        triangulation data is fetched from the underlying C++ pointer associated
+        with the polygon through an external mesh reading utility.
+
+        :param poly: The polygon object for which the triangulation coordinates
+            are to be retrieved.
+        :type poly: Poly_Triangulation
+        :return: A NumPy array containing the triangulation coordinates of the
+            given polygon.
+        :rtype: np.ndarray
+        """
+        cpp_ptr = cls._get_cpp_pointer(poly)
+        return occ_bridge.mesh.read_poly_triangulation_coords(cpp_ptr)
+
+    @classmethod
     def fill_poly_triangulation_indices(cls, poly: Poly_Triangulation, indices: np.ndarray):
+        """
+        Fills the polygon triangulation indices using a given polygon triangulation object
+        and a numpy array of indices. This method modifies the provided indices to account
+        for shifts from 0-based to 1-based indexing, and it relies on an underlying C++
+        implementation for its functionality.
+
+        :param poly: A `Poly_Triangulation` object representing the polygon triangulation.
+        :param indices: A numpy array containing the indices to be filled. Indices are
+            expected to be shifted to account for 1-based indexing during processing.
+        :return: None
+        """
         cpp_ptr = cls._get_cpp_pointer(poly)
 
         # Populate via C++ (automatically shifts indices from 0-based to 1-based)
         occ_bridge.mesh.fill_poly_triangulation_indices(cpp_ptr, indices)
 
+    @classmethod
+    def get_poly_triangulation_indices(cls, poly: Poly_Triangulation) -> np.ndarray:
+        """
+        Retrieves the triangulation indices of a given polygon. The method retrieves the
+        Python pointer of the polygon, processes it using an underlying C++ bridge, and
+        returns the triangulation indices as a NumPy array. The indices are adjusted to
+        be zero-based.
+
+        :param poly: The polygon triangulation object from which indices are obtained.
+        :type poly: Poly_Triangulation
+        :return: A NumPy array containing the triangulation indices, adjusted to zero-based indices.
+        :rtype: numpy.ndarray
+        """
+        cpp_ptr = cls._get_cpp_pointer(poly)
+
+        # Populate via C++ (automatically shifts indices from 1-based to 0-based)
+        return occ_bridge.mesh.read_poly_triangulation_indices(cpp_ptr)
 
     @classmethod
     def create_poly_triangulation(
