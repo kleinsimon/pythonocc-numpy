@@ -7,8 +7,9 @@ Zero-Copy NumPy Adapter für OpenCASCADE und pythonocc-core.
 from . import occ_bridge
 
 # Exportiere unsere Helper-Klasse für direkten Zugriff
-from .graphics3d import Graphic3d_ArrayOfPoints_Helper
-from .poly import Poly_Triangulation_Helper
+from .g3d_arrayofpoints import Graphic3d_ArrayOfPoints_Helper
+from .g3d_arrayoftriangles import Graphic3d_ArrayOfTriangles_Helper
+from .poly_triangulation import Poly_Triangulation_Helper
 
 __version__ = "0.1.1"
-__all__ = ["occ_bridge", "Graphic3d_ArrayOfPoints_Helper", "Poly_Triangulation_Helper"]
+__all__ = ["occ_bridge", "Graphic3d_ArrayOfPoints_Helper", "Poly_Triangulation_Helper", "Graphic3d_ArrayOfTriangles_Helper"]
