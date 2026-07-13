@@ -83,6 +83,8 @@ jobs:
         shell: python
         run: |
           import os
+          os.makedirs("public", exist_ok=True)
+          
           with open("public/index.html", "w") as f:
               f.write("<html><body>\n")
               for file in sorted(os.listdir("dist")):
