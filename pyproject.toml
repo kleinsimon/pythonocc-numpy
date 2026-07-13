@@ -9,7 +9,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "occ-numpy-bridge"
-version = "0.1.4"
+version = "0.1.4.dev1"
 description = "Fast Bridge between pythonocc-core und NumPy"
 readme = "README.md"
 license-files = ["LICENSE.txt"]
