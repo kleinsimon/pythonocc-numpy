@@ -1,33 +1,23 @@
 import numpy as np
 from OCC.Core.Graphic3d import Graphic3d_ArrayOfTriangles
+
 from . import occ_bridge
+from .base import OCC_Wrapper_Base
 
 
-class Graphic3d_ArrayOfTriangles_Helper:
+class Graphic3d_ArrayOfTriangles_Helper(OCC_Wrapper_Base):
     """
     Helper class for data transfer between NumPy arrays and
     OpenCASCADE Graphic3d_ArrayOfTriangles objects.
     """
+
+    _OCC_CLS = Graphic3d_ArrayOfTriangles
 
     # --- OCCT 7.6+ / 7.9+ Bitmask Constants ---
     FLAG_NONE = 0
     FLAG_VERTEX_NORMAL = 1
     FLAG_VERTEX_COLOR = 2
     FLAG_VERTEX_TEXEL = 4
-
-    @staticmethod
-    def _get_cpp_pointer(occ_array: Graphic3d_ArrayOfTriangles) -> int:
-        """
-        Reliably extracts the native C++ memory address from a pythonocc object
-        by dereferencing the SWIG proxy object (double .this lookup).
-        """
-        if not isinstance(occ_array, Graphic3d_ArrayOfTriangles):
-            raise TypeError("Provided object is not a valid Graphic3d_ArrayOfTriangles instance!")
-
-        try:
-            return int(occ_array.this.this)
-        except AttributeError:
-            raise TypeError("Provided object is not a valid SWIG-wrapped OpenCASCADE instance!")
 
     @classmethod
     def set_coordinates(cls, occ_array: Graphic3d_ArrayOfTriangles, np_coords: np.ndarray) -> None:

@@ -1,24 +1,17 @@
 import numpy as np
 from OCC.Core.Poly import Poly_Triangulation
-from . import occ_bridge
+
+from occ_numpy_bridge import occ_bridge
+from occ_numpy_bridge.base import OCC_Wrapper_Base
 
 
-class Poly_Triangulation_Helper:
+class Poly_Triangulation_Helper(OCC_Wrapper_Base):
     """
     Helper class for creating rendering meshes (Graphic3d_ArrayOfTriangles)
     and CAD geometry meshes (Poly_Triangulation) directly from NumPy arrays.
     """
 
-    @staticmethod
-    def _get_cpp_pointer(occ_obj) -> int:
-        """Extracts the underlying C++ pointer from a SWIG wrapper object."""
-        if not isinstance(occ_obj, Poly_Triangulation):
-            raise TypeError("Provided object is not a valid Poly_Triangulation instance!")
-
-        try:
-            return int(occ_obj.this.this)
-        except AttributeError:
-            raise TypeError("Provided object is not a valid SWIG-wrapped OpenCASCADE instance!")
+    _OCC_CLS = Poly_Triangulation
 
     @classmethod
     def fill_poly_triangulation(cls, poly: Poly_Triangulation, coords: np.ndarray, indices: np.ndarray):
@@ -39,7 +32,7 @@ class Poly_Triangulation_Helper:
         cpp_ptr = cls._get_cpp_pointer(poly)
 
         # Populate via C++ (automatically shifts indices from 0-based to 1-based)
-        occ_bridge.mesh.fill_poly_triangulation(cpp_ptr, coords, indices)
+        occ_bridge.poly.fill_poly_triangulation(cpp_ptr, coords, indices)
 
     @classmethod
     def fill_poly_triangulation_coords(cls, poly: Poly_Triangulation, coords: np.ndarray):
@@ -54,7 +47,7 @@ class Poly_Triangulation_Helper:
         :return: None
         """
         cpp_ptr = cls._get_cpp_pointer(poly)
-        occ_bridge.mesh.fill_poly_triangulation_coords(cpp_ptr, coords)
+        occ_bridge.poly.fill_poly_triangulation_coords(cpp_ptr, coords)
 
     @classmethod
     def get_poly_triangulation_coords(cls, poly: Poly_Triangulation) -> np.ndarray:
@@ -74,7 +67,7 @@ class Poly_Triangulation_Helper:
         :rtype: np.ndarray
         """
         cpp_ptr = cls._get_cpp_pointer(poly)
-        return occ_bridge.mesh.read_poly_triangulation_coords(cpp_ptr)
+        return occ_bridge.poly.read_poly_triangulation_coords(cpp_ptr)
 
     @classmethod
     def fill_poly_triangulation_indices(cls, poly: Poly_Triangulation, indices: np.ndarray):
@@ -92,7 +85,7 @@ class Poly_Triangulation_Helper:
         cpp_ptr = cls._get_cpp_pointer(poly)
 
         # Populate via C++ (automatically shifts indices from 0-based to 1-based)
-        occ_bridge.mesh.fill_poly_triangulation_indices(cpp_ptr, indices)
+        occ_bridge.poly.fill_poly_triangulation_indices(cpp_ptr, indices)
 
     @classmethod
     def get_poly_triangulation_indices(cls, poly: Poly_Triangulation) -> np.ndarray:
@@ -110,7 +103,7 @@ class Poly_Triangulation_Helper:
         cpp_ptr = cls._get_cpp_pointer(poly)
 
         # Populate via C++ (automatically shifts indices from 1-based to 0-based)
-        return occ_bridge.mesh.read_poly_triangulation_indices(cpp_ptr)
+        return occ_bridge.poly.read_poly_triangulation_indices(cpp_ptr)
 
     @classmethod
     def create_poly_triangulation(
