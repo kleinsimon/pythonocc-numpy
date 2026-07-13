@@ -2,7 +2,8 @@
 requires = [
     "scikit-build-core>=0.8.0",
     "pybind11>=2.10.0",
-    "pybind11-stubgen"
+    "pybind11-stubgen",
+    "numpy>=1.21.0"
 ]
 build-backend = "scikit_build_core.build"
 
