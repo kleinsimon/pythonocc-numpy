@@ -13,5 +13,5 @@ dependencies:
   - cmake>=3.18
   - ninja
   - python-build
-
+  - pybind11-stubgen
   - pytest
