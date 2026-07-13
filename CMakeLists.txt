@@ -18,7 +18,7 @@ if(WIN32)
     endif()
 endif()
 
-pybind11_add_module(occ_bridge src/csrc/point_bridge.cpp)
+pybind11_add_module(occ_bridge src/csrc/main.cpp)
 
 target_include_directories(occ_bridge PRIVATE
     ${OpenCASCADE_INCLUDE_DIR}
@@ -31,6 +31,16 @@ target_link_libraries(occ_bridge PRIVATE
     TKService
     TKV3d
     TKOpenGl
+    TKMeshVS
 )
 
 install(TARGETS occ_bridge DESTINATION occ_numpy_bridge COMPONENT python_modules)
+
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+
+add_custom_command(TARGET occ_bridge POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=$<TARGET_FILE_DIR:occ_bridge> 
+            ${Python3_EXECUTABLE} -m pybind11_stubgen occ_bridge -o $<TARGET_FILE_DIR:occ_bridge>
+    WORKING_DIRECTORY $<TARGET_FILE_DIR:occ_bridge>
+    COMMENT "Generating Python Stubs (.pyi)..."
+)
