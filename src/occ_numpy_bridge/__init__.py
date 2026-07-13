@@ -12,7 +12,7 @@ from .g3d_arrayoftriangles import Graphic3d_ArrayOfTriangles_Helper
 from .poly_triangulation import Poly_Triangulation_Helper
 from .mvs_nodalcolorprsbuilder import MeshVS_NodalColorPrsBuilder_Helper
 
-__version__ = "0.1.1"
+__version__ = "0.1.4"
 __all__ = [
     "occ_bridge",
     "Graphic3d_ArrayOfPoints_Helper",
