@@ -101,4 +101,5 @@ def test_poly_triangulation_dimension_mismatch_raises_error():
     cpp_ptr = get_cpp_ptr(poly)
 
     with pytest.raises(RuntimeError, match="do not match NumPy array shapes"):
-        occ_bridge.mesh.fill_poly_triangulation(cpp_ptr, np_coords, np_indices)
+        occ_bridge.poly.fill_poly_triangulation(cpp_ptr, np_coords, np_indices)
+

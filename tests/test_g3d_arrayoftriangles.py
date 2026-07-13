@@ -147,19 +147,6 @@ def test_g3d_mesh_insufficient_edge_memory_raises_error():
         occ_bridge.graphic3d.fill_array_of_triangles_indices(cpp_ptr, np_indices)
 
 
-def test_poly_triangulation_dimension_mismatch_raises_error():
-    """Ensures C++ adapter throws an exception if NumPy shape does not match allocation."""
-    np_coords = np.zeros((100, 3), dtype=np.float64)
-    np_indices = np.zeros((50, 3), dtype=np.int32)
-
-    # Allocate Poly_Triangulation expecting 200 nodes instead of 100
-    poly = Poly_Triangulation(200, 50, False)
-    cpp_ptr = get_cpp_ptr(poly)
-
-    with pytest.raises(RuntimeError, match="do not match NumPy array shapes"):
-        occ_bridge.mesh.fill_poly_triangulation(cpp_ptr, np_coords, np_indices)
-
-
 def test_invalid_index_dtype_raises_error():
     """Ensures passing float64 or int64 indices instead of int32 throws an exception."""
     np_coords = np.zeros((10, 3), dtype=np.float64)
