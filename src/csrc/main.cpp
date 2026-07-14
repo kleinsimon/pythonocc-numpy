@@ -4,6 +4,7 @@
 #include "g3d.cpp"
 #include "poly.cpp"
 #include "mvs.cpp"
+#include "mds.cpp"
 
 
 PYBIND11_MODULE(occ_bridge, m) {
@@ -37,4 +38,9 @@ PYBIND11_MODULE(occ_bridge, m) {
     py::module_ meshvs = m.def_submodule("meshvs", "Adapters for OCC.Core.MeshVS classes");
     meshvs.def("fill_meshvs_nodal_color_prs_builder_colors", &fill_nodal_color_prs_builder_colors, "Fills MeshVS_NodalColorPrsBuilder colors from NumPy");
     meshvs.def("read_meshvs_nodal_color_prs_builder_colors", &read_nodal_color_prs_builder_colors, "Reads MeshVS_NodalColorPrsBuilder colors to NumPy");
+
+    meshvs.def("assign_numpy_datasource_to_mesh", &assign_numpy_datasource_to_mesh, "Creates a Datasource from numpy arrays and assigns it to a MeshVS_Mesh");
+    meshvs.def("read_numpy_datasource_vertices", &read_numpy_datasource_vertices, "Read the vertices / nodes from a numpy datasource");
+    meshvs.def("read_numpy_datasource_faces", &read_numpy_datasource_faces, "Read the faces / elements from a numpy datasource");
+    meshvs.def("read_numpy_datasource_normals", &read_numpy_datasource_normals, "Read the normals from a numpy datasource");
 }
