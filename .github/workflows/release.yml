@@ -52,12 +52,6 @@ jobs:
           conda activate occ-bridge-dev
           python -m build --wheel
 
-      - name: upload wheel to artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheel-${{ matrix.os }}-py${{ matrix.python-version }}
-          path: dist/*.whl
-
       - name: Attach wheel to release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
@@ -77,24 +71,34 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Download wheels from Build-Job
-        uses: actions/download-artifact@v4
-        with:
-          pattern: '*'
-          path: dist
-          merge-multiple: true
-
-      - name: Generate Index for Release-Wheels
+      - name: Generiere Index für ALLE Releases via API
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         shell: python
         run: |
-          import os
-          os.makedirs("public", exist_ok=True)
+          import os, json, urllib.request
           
+          # GitHub API nach allen Releases dieses Repos fragen
+          api_url = f"https://api.github.com/repos/{os.environ['REPO']}/releases"
+          req = urllib.request.Request(api_url)
+          req.add_header("Authorization", f"Bearer {os.environ['GITHUB_TOKEN']}")
+          req.add_header("Accept", "application/vnd.github.v3+json")
+          
+          with urllib.request.urlopen(req) as response:
+              releases = json.loads(response.read().decode())
+              
+          os.makedirs("public", exist_ok=True)
           with open("public/index.html", "w") as f:
-              f.write("<html><body>\n")
-              for file in sorted(os.listdir("dist")):
-                  if file.endswith(".whl"):
-                      f.write(f'<a href="{file}">{file}</a><br>\n')
+              f.write("<html><body>\n<h1>Package Index</h1>\n")
+              
+              for release in releases:
+                  for asset in release.get("assets", []):
+                      if asset["name"].endswith(".whl"):
+                          download_url = asset["browser_download_url"]
+                          filename = asset["name"]
+                          f.write(f'<a href="{download_url}">{filename}</a><br>\n')
+                          
               f.write("</body></html>\n")
 
       - name: Upload to GitHub Pages
