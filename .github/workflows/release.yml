@@ -21,10 +21,10 @@ jobs:
       contents: write
 
     steps:
-      - name: Code auschecken
+      - name: Checkout Sources
         uses: actions/checkout@v4
 
-      - name: Mamba & Conda-Forge Umgebung einrichten (Python ${{ matrix.python-version }})
+      - name: Setup Mamba & Conda-Forge env (Python ${{ matrix.python-version }})
         uses: conda-incubator/setup-miniconda@v4
         with:
           miniforge-version: "latest"
@@ -39,22 +39,26 @@ jobs:
           MAMBA_NO_PROGRESS_BARS: "1"
           CONDA_SHOW_CHANNEL_URLS: "false"
 
-      - name: Tests mit pytest ausführen
-        # HIER GEÄNDERT: Plattformübergreifende Shell für Conda
+      - name: Run pytest Unittests
         shell: bash -el {0}
         run: |
           conda activate occ-bridge-dev
           pip install -e .
           pytest
 
-      - name: Wheel bauen
-        # HIER GEÄNDERT: Plattformübergreifende Shell für Conda
+      - name: build wheel
         shell: bash -el {0}
         run: |
           conda activate occ-bridge-dev
           python -m build --wheel
 
-      - name: Wheel an das GitHub Release anhängen
+      - name: upload wheel to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: dist/*.whl
+
+      - name: Attach wheel to release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
