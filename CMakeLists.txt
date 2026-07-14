@@ -18,7 +18,7 @@ if(WIN32)
     endif()
 endif()
 
-pybind11_add_module(occ_bridge src/csrc/main.cpp)
+pybind11_add_module(occ_bridge "src/csrc/main.cpp")
 
 target_include_directories(occ_bridge PRIVATE
     ${OpenCASCADE_INCLUDE_DIR}
