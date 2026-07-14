@@ -3,17 +3,18 @@ requires = [
     "scikit-build-core>=0.8.0",
     "pybind11>=2.10.0",
     "pybind11-stubgen",
-    "numpy>=1.21.0"
+    "numpy>=1.21.0",
+    "setuptools-scm"
 ]
 build-backend = "scikit_build_core.build"
 
 [project]
 name = "occ-numpy-bridge"
-version = "0.1.4.dev1"
 description = "Fast Bridge between pythonocc-core und NumPy"
 readme = "README.md"
 license-files = ["LICENSE.txt"]
 license = "BSD-3-Clause"
+dynamic = ["version"]
 authors = [
     { name = "Simon Klein" }
 ]
@@ -62,9 +63,14 @@ cmake.version = ">=3.18"
 cmake.build-type = "Release"
 wheel.packages = ["src/occ_numpy_bridge"]
 install.components = ["python_modules"]
+metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
+sdist.include = ["src/occ_numpy_bridge/_version.py"]
 
 [project.urls]
 Homepage = "https://github.com/kleinsimon/pythonocc-numpy"
 Repository = "https://github.com/kleinsimon/pythonocc-numpy"
 Issues = "https://github.com/kleinsimon/pythonocc-numpy/issues"
 Releases = "https://github.com/kleinsimon/pythonocc-numpy/releases"
+
+[tool.setuptools_scm]
+write_to = "src/occ_numpy_bridge/_version.py"
