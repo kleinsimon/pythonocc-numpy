@@ -34,6 +34,7 @@ private:
         Standard_Integer nb_elems = my_elements.shape(0);
 
         my_node_normals.assign(nb_nodes * 3, 0.0);
+        my_elem_normals.assign(nb_elems * 3, 0.0);
 
         for (Standard_Integer i = 0; i < nb_elems; ++i) {
             Standard_Integer idx0 = elems_proxy(i, 0);

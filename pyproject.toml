@@ -74,3 +74,4 @@ Releases = "https://github.com/kleinsimon/pythonocc-numpy/releases"
 
 [tool.setuptools_scm]
 write_to = "src/occ_numpy_bridge/_version.py"
+fallback_version = "0.0.0.dev0"
