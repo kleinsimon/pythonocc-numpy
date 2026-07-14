@@ -1,0 +1,59 @@
+name: Update Pip Index on GitHub Pages
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Build and Upload Wheels to GitHub Release"]
+    types:
+      - completed
+  release:
+    types: [deleted, edited]
+
+jobs:
+  deploy-index:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Generating Index for ALL Releases via API
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        shell: python
+        run: |
+          import os, json, urllib.request
+          
+          api_url = f"https://api.github.com/repos/{os.environ['REPO']}/releases"
+          req = urllib.request.Request(api_url)
+          req.add_header("Authorization", f"Bearer {os.environ['GITHUB_TOKEN']}")
+          req.add_header("Accept", "application/vnd.github.v3+json")
+          
+          with urllib.request.urlopen(req) as response:
+              releases = json.loads(response.read().decode())
+              
+          os.makedirs("public", exist_ok=True)
+          with open("public/index.html", "w") as f:
+              f.write("<html><body>\n<h1>Package Index</h1>\n")
+              
+              for release in releases:
+                  for asset in release.get("assets", []):
+                      if asset["name"].endswith(".whl"):
+                          download_url = asset["browser_download_url"]
+                          filename = asset["name"]
+                          f.write(f'<a href="{download_url}">{filename}</a><br>\n')
+                          
+              f.write("</body></html>\n")
+
+      - name: Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'public'
+
+      - name: Deployment
+        id: deployment
+        uses: actions/deploy-pages@v4
