@@ -19,7 +19,8 @@ private:
     py::array_t<int32_t> my_elements;
     std::optional<py::array_t<double>> my_normals;
 
-    std::vector<double> my_computed_normals;
+    std::vector<double> my_node_normals;
+    std::vector<double> my_elem_normals;
     bool use_computed_normals = false;
 
     TColStd_PackedMapOfInteger my_node_ids;
@@ -32,7 +33,7 @@ private:
         Standard_Integer nb_nodes = my_nodes.shape(0);
         Standard_Integer nb_elems = my_elements.shape(0);
 
-        my_computed_normals.assign(nb_nodes * 3, 0.0);
+        my_node_normals.assign(nb_nodes * 3, 0.0);
 
         for (Standard_Integer i = 0; i < nb_elems; ++i) {
             Standard_Integer idx0 = elems_proxy(i, 0);
@@ -53,27 +54,35 @@ private:
             double ny = u[2] * v[0] - u[0] * v[2];
             double nz = u[0] * v[1] - u[1] * v[0];
 
+            // store element normals
+            double len = std::sqrt(nx * nx + ny * ny + nz * nz);
+            if (len > 1e-10) {
+                my_elem_normals[i * 3 + 0] = nx / len;
+                my_elem_normals[i * 3 + 1] = ny / len;
+                my_elem_normals[i * 3 + 2] = nz / len;
+            }
+
             // sum over vertices
             for (int j = 0; j < 3; ++j) {
                 Standard_Integer v_idx = elems_proxy(i, j);
-                my_computed_normals[v_idx * 3 + 0] += nx;
-                my_computed_normals[v_idx * 3 + 1] += ny;
-                my_computed_normals[v_idx * 3 + 2] += nz;
+                my_node_normals[v_idx * 3 + 0] += nx;
+                my_node_normals[v_idx * 3 + 1] += ny;
+                my_node_normals[v_idx * 3 + 2] += nz;
             }
-        }
 
         // Normalize
         for (Standard_Integer i = 0; i < nb_nodes; ++i) {
-            double nx = my_computed_normals[i * 3 + 0];
-            double ny = my_computed_normals[i * 3 + 1];
-            double nz = my_computed_normals[i * 3 + 2];
+            double nx = my_node_normals[i * 3 + 0];
+            double ny = my_node_normals[i * 3 + 1];
+            double nz = my_node_normals[i * 3 + 2];
 
             double len = std::sqrt(nx * nx + ny * ny + nz * nz);
             if (len > 1e-10) {
-                my_computed_normals[i * 3 + 0] /= len;
-                my_computed_normals[i * 3 + 1] /= len;
-                my_computed_normals[i * 3 + 2] /= len;
+                my_node_normals[i * 3 + 0] /= len;
+                my_node_normals[i * 3 + 1] /= len;
+                my_node_normals[i * 3 + 2] /= len;
             }
+        }
         }
     }
 
@@ -205,22 +214,31 @@ public:
         Standard_Real& ny,
         Standard_Real& nz) const override {
 
-        if (!my_node_ids.Contains(ID)) return Standard_False;
+        Standard_Integer idx = ID - 1; // OCC (1-based) -> C++ (0-based)
 
-        Standard_Integer np_idx = ID - 1;
-
-        if (use_computed_normals) {
-            nx = my_computed_normals[np_idx * 3 + 0];
-            ny = my_computed_normals[np_idx * 3 + 1];
-            nz = my_computed_normals[np_idx * 3 + 2];
-            return Standard_True;
+        if (my_node_ids.Contains(ID)) {
+            if (use_computed_normals) {
+                nx = my_node_normals[idx * 3 + 0];
+                ny = my_node_normals[idx * 3 + 1];
+                nz = my_node_normals[idx * 3 + 2];
+                return Standard_True;
+            }
+            else if (my_normals.has_value()) {
+                auto norms_proxy = my_normals->unchecked<2>();
+                nx = norms_proxy(idx, 0);
+                ny = norms_proxy(idx, 1);
+                nz = norms_proxy(idx, 2);
+                return Standard_True;
+            }
         }
-        else if (my_normals.has_value()) {
-            auto norms_proxy = my_normals->unchecked<2>();
-            nx = norms_proxy(np_idx, 0);
-            ny = norms_proxy(np_idx, 1);
-            nz = norms_proxy(np_idx, 2);
-            return Standard_True;
+
+        else if (my_element_ids.Contains(ID)) {
+            if (use_computed_normals) {
+                nx = my_elem_normals[idx * 3 + 0];
+                ny = my_elem_normals[idx * 3 + 1];
+                nz = my_elem_normals[idx * 3 + 2];
+                return Standard_True;
+            }
         }
 
         return Standard_False;
