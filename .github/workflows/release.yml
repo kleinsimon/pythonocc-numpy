@@ -82,6 +82,7 @@ jobs:
         with:
           pattern: '*'
           path: dist
+          merge-multiple: true
 
       - name: Generate Index for Release-Wheels
         shell: python
