@@ -41,27 +41,28 @@ private:
             Standard_Integer idx1 = elems_proxy(i, 1);
             Standard_Integer idx2 = elems_proxy(i, 2);
 
-            // fetch coords
-            double p0[3] = { nodes_proxy(idx0, 0), nodes_proxy(idx0, 1), nodes_proxy(idx0, 2) };
-            double p1[3] = { nodes_proxy(idx1, 0), nodes_proxy(idx1, 1), nodes_proxy(idx1, 2) };
-            double p2[3] = { nodes_proxy(idx2, 0), nodes_proxy(idx2, 1), nodes_proxy(idx2, 2) };
+            const gp_Pnt aP1 = gp_Pnt(nodes_proxy(idx0, 0), nodes_proxy(idx0, 1), nodes_proxy(idx0, 2));
+            const gp_Pnt aP2 = gp_Pnt(nodes_proxy(idx1, 0), nodes_proxy(idx1, 1), nodes_proxy(idx1, 2));
+            const gp_Pnt aP3 = gp_Pnt(nodes_proxy(idx2, 0), nodes_proxy(idx2, 1), nodes_proxy(idx2, 2));
 
-            // vecs of edges (U = P1 - P0, V = P2 - P0)
-            double u[3] = { p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2] };
-            double v[3] = { p2[0] - p0[0], p2[1] - p0[1], p2[2] - p0[2] };
+            gp_Vec aV1(aP1, aP2);
+            gp_Vec aV2(aP2, aP3);
+            gp_Vec aN = aV1.Crossed(aV2);
 
-            // cross product
-            double nx = u[1] * v[2] - u[2] * v[1];
-            double ny = u[2] * v[0] - u[0] * v[2];
-            double nz = u[0] * v[1] - u[1] * v[0];
+            Standard_Real nx, ny, nz;
 
-            // store element normals
-            double len = std::sqrt(nx * nx + ny * ny + nz * nz);
-            if (len > 1e-10) {
-                my_elem_normals[i * 3 + 0] = nx / len;
-                my_elem_normals[i * 3 + 1] = ny / len;
-                my_elem_normals[i * 3 + 2] = nz / len;
-            }
+            aN.Coord(nx, ny, nz);
+
+            if (aN.SquareMagnitude() > Precision::SquareConfusion())
+                aN.Normalize();
+            else
+                aN.SetCoord(0.0, 0.0, 0.0);
+
+            aN.Coord(
+                my_elem_normals[i * 3 + 0], 
+                my_elem_normals[i * 3 + 1], 
+                my_elem_normals[i * 3 + 2]
+            );
 
             // sum over vertices
             for (int j = 0; j < 3; ++j) {
@@ -72,7 +73,7 @@ private:
             }
         }
 
-        // Normalize
+        // Normalize node normals
         for (Standard_Integer i = 0; i < nb_nodes; ++i) {
             double nx = my_node_normals[i * 3 + 0];
             double ny = my_node_normals[i * 3 + 1];
@@ -198,48 +199,68 @@ public:
         return my_element_ids;
     }
 
-    Standard_Boolean Get3DGeom(const Standard_Integer /*ID*/,
+    Standard_Boolean Get3DGeom(
+        const Standard_Integer /*ID*/,
         Standard_Integer&,
         Handle(MeshVS_HArray1OfSequenceOfInteger)& /*Data*/) const override {
         return Standard_False;
     }
 
-    Standard_Address GetAddr(const Standard_Integer /*ID*/,
+    Standard_Address GetAddr(
+        const Standard_Integer /*ID*/,
         const Standard_Boolean /*IsElement*/) const override {
         return nullptr;
     }
 
-    Standard_Boolean GetNormal(const Standard_Integer ID,
-        const Standard_Integer Max,
+    Standard_Boolean GetNormal(
+        const Standard_Integer ID,
+        const Standard_Integer /*Max*/,
         Standard_Real& nx,
         Standard_Real& ny,
         Standard_Real& nz) const override {
 
-        Standard_Integer idx = ID - 1; // OCC (1-based) -> C++ (0-based)
+        if (!my_element_ids.Contains(ID))
+            return Standard_False;
 
-        if (my_node_ids.Contains(ID)) {
-            if (use_computed_normals) {
-                nx = my_node_normals[idx * 3 + 0];
-                ny = my_node_normals[idx * 3 + 1];
-                nz = my_node_normals[idx * 3 + 2];
-                return Standard_True;
-            }
-            else if (my_normals.has_value()) {
-                auto norms_proxy = my_normals->unchecked<2>();
-                nx = norms_proxy(idx, 0);
-                ny = norms_proxy(idx, 1);
-                nz = norms_proxy(idx, 2);
-                return Standard_True;
-            }
+        Standard_Integer idx = ID - 1;
+
+        if (use_computed_normals) {
+            nx = my_elem_normals[idx * 3 + 0];
+            ny = my_elem_normals[idx * 3 + 1];
+            nz = my_elem_normals[idx * 3 + 2];
+            return Standard_True;
         }
 
-        else if (my_element_ids.Contains(ID)) {
-            if (use_computed_normals) {
-                nx = my_elem_normals[idx * 3 + 0];
-                ny = my_elem_normals[idx * 3 + 1];
-                nz = my_elem_normals[idx * 3 + 2];
-                return Standard_True;
-            }
+        return Standard_False;
+    }
+
+    Standard_Boolean GetNodeNormal(
+        const Standard_Integer ranknode,
+        const Standard_Integer ElementId,
+        Standard_Real& nx,
+        Standard_Real& ny,
+        Standard_Real& nz) const override {
+
+        if (!my_element_ids.Contains(ElementId))
+            return Standard_False;
+
+        auto elems_proxy = my_elements.unchecked<2>();
+        Standard_Integer elem_idx = ElementId - 1;
+
+        Standard_Integer node_idx = elems_proxy(elem_idx, ranknode - 1);
+
+        if (use_computed_normals) {
+            nx = my_node_normals[node_idx * 3 + 0];
+            ny = my_node_normals[node_idx * 3 + 1];
+            nz = my_node_normals[node_idx * 3 + 2];
+            return Standard_True;
+        }
+        else if (my_normals.has_value()) {
+            auto norms_proxy = my_normals->unchecked<2>();
+            nx = norms_proxy(node_idx, 0);
+            ny = norms_proxy(node_idx, 1);
+            nz = norms_proxy(node_idx, 2);
+            return Standard_True;
         }
 
         return Standard_False;
