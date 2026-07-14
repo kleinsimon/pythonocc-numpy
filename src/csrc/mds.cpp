@@ -70,6 +70,7 @@ private:
                 my_node_normals[v_idx * 3 + 1] += ny;
                 my_node_normals[v_idx * 3 + 2] += nz;
             }
+        }
 
         // Normalize
         for (Standard_Integer i = 0; i < nb_nodes; ++i) {
@@ -83,7 +84,6 @@ private:
                 my_node_normals[i * 3 + 1] /= len;
                 my_node_normals[i * 3 + 2] /= len;
             }
-        }
         }
     }
 
