@@ -367,3 +367,6 @@ build/
 dist/
 
 *.pyd
+
+# Claude Code
+CLAUDE.md

@@ -21,75 +21,123 @@ private:
 
     std::vector<double> my_node_normals;
     std::vector<double> my_elem_normals;
+    std::vector<double> my_elem_normals_raw;
+    std::vector<double> my_smooth_normals;
     bool use_computed_normals = false;
+
+    double my_crease_angle_cos = 0.0;
 
     TColStd_PackedMapOfInteger my_node_ids;
     TColStd_PackedMapOfInteger my_element_ids;
 
-    void compute_normals() {
+    void compute_normals(double crease_angle_deg) {
         auto nodes_proxy = my_nodes.unchecked<2>();
         auto elems_proxy = my_elements.unchecked<2>();
 
         Standard_Integer nb_nodes = my_nodes.shape(0);
         Standard_Integer nb_elems = my_elements.shape(0);
 
-        my_node_normals.assign(nb_nodes * 3, 0.0);
-        my_elem_normals.assign(nb_elems * 3, 0.0);
+        my_crease_angle_cos = std::cos(crease_angle_deg * M_PI / 180.0);
 
+        my_elem_normals.resize(nb_elems * 3);
+        my_elem_normals_raw.resize(nb_elems * 3);
+
+        // ── Phase 1: Compute face normals ──
         for (Standard_Integer i = 0; i < nb_elems; ++i) {
             Standard_Integer idx0 = elems_proxy(i, 0);
             Standard_Integer idx1 = elems_proxy(i, 1);
             Standard_Integer idx2 = elems_proxy(i, 2);
 
-            const gp_Pnt aP1 = gp_Pnt(nodes_proxy(idx0, 0), nodes_proxy(idx0, 1), nodes_proxy(idx0, 2));
-            const gp_Pnt aP2 = gp_Pnt(nodes_proxy(idx1, 0), nodes_proxy(idx1, 1), nodes_proxy(idx1, 2));
-            const gp_Pnt aP3 = gp_Pnt(nodes_proxy(idx2, 0), nodes_proxy(idx2, 1), nodes_proxy(idx2, 2));
+            gp_Pnt aP1(nodes_proxy(idx0, 0), nodes_proxy(idx0, 1), nodes_proxy(idx0, 2));
+            gp_Pnt aP2(nodes_proxy(idx1, 0), nodes_proxy(idx1, 1), nodes_proxy(idx1, 2));
+            gp_Pnt aP3(nodes_proxy(idx2, 0), nodes_proxy(idx2, 1), nodes_proxy(idx2, 2));
 
-            gp_Vec aV1(aP1, aP2);
-            gp_Vec aV2(aP2, aP3);
-            gp_Vec aN = aV1.Crossed(aV2);
+            gp_Vec aN = gp_Vec(aP1, aP2).Crossed(gp_Vec(aP1, aP3));
 
-            Standard_Real nx, ny, nz;
+            // Store raw (area-weighted) normal for smooth averaging
+            aN.Coord(
+                my_elem_normals_raw[i * 3 + 0],
+                my_elem_normals_raw[i * 3 + 1],
+                my_elem_normals_raw[i * 3 + 2]
+            );
 
-            aN.Coord(nx, ny, nz);
-
+            // Store normalized face normal
             if (aN.SquareMagnitude() > Precision::SquareConfusion())
                 aN.Normalize();
             else
                 aN.SetCoord(0.0, 0.0, 0.0);
 
             aN.Coord(
-                my_elem_normals[i * 3 + 0], 
-                my_elem_normals[i * 3 + 1], 
+                my_elem_normals[i * 3 + 0],
+                my_elem_normals[i * 3 + 1],
                 my_elem_normals[i * 3 + 2]
             );
+        }
 
-            // sum over vertices
+        // ── Phase 2: Build node → elements adjacency ──
+        std::vector<std::vector<Standard_Integer>> node_to_elems(nb_nodes);
+        for (Standard_Integer i = 0; i < nb_elems; ++i) {
             for (int j = 0; j < 3; ++j) {
-                Standard_Integer v_idx = elems_proxy(i, j);
-                my_node_normals[v_idx * 3 + 0] += nx;
-                my_node_normals[v_idx * 3 + 1] += ny;
-                my_node_normals[v_idx * 3 + 2] += nz;
+                node_to_elems[elems_proxy(i, j)].push_back(i);
             }
         }
 
-        // Normalize node normals
-        for (Standard_Integer i = 0; i < nb_nodes; ++i) {
-            double nx = my_node_normals[i * 3 + 0];
-            double ny = my_node_normals[i * 3 + 1];
-            double nz = my_node_normals[i * 3 + 2];
+        // ── Phase 3: Compute per-element-vertex smooth normals ──
+        // For each (element, local_vertex) pair, average only those
+        // neighbor face normals whose angle to the current face normal
+        // is below the crease threshold.
+        my_smooth_normals.resize(nb_elems * 9);
 
-            double len = std::sqrt(nx * nx + ny * ny + nz * nz);
-            if (len > 1e-10) {
-                my_node_normals[i * 3 + 0] /= len;
-                my_node_normals[i * 3 + 1] /= len;
-                my_node_normals[i * 3 + 2] /= len;
+        for (Standard_Integer ei = 0; ei < nb_elems; ++ei) {
+            double fnx = my_elem_normals[ei * 3 + 0];
+            double fny = my_elem_normals[ei * 3 + 1];
+            double fnz = my_elem_normals[ei * 3 + 2];
+
+            for (int lv = 0; lv < 3; ++lv) {
+                Standard_Integer node_idx = elems_proxy(ei, lv);
+                const auto& adj_elems = node_to_elems[node_idx];
+
+                double sx = 0.0, sy = 0.0, sz = 0.0;
+
+                for (Standard_Integer ej : adj_elems) {
+                    double onx = my_elem_normals[ej * 3 + 0];
+                    double ony = my_elem_normals[ej * 3 + 1];
+                    double onz = my_elem_normals[ej * 3 + 2];
+
+                    // dot product of normalized face normals = cos(angle)
+                    double dot = fnx * onx + fny * ony + fnz * onz;
+
+                    if (dot >= my_crease_angle_cos) {
+                        // Within crease angle → include area-weighted normal
+                        sx += my_elem_normals_raw[ej * 3 + 0];
+                        sy += my_elem_normals_raw[ej * 3 + 1];
+                        sz += my_elem_normals_raw[ej * 3 + 2];
+                    }
+                }
+
+                double len = std::sqrt(sx * sx + sy * sy + sz * sz);
+                if (len > 1e-10) {
+                    sx /= len; sy /= len; sz /= len;
+                }
+                else {
+                    // Fallback to face normal
+                    sx = fnx; sy = fny; sz = fnz;
+                }
+
+                my_smooth_normals[(ei * 3 + lv) * 3 + 0] = sx;
+                my_smooth_normals[(ei * 3 + lv) * 3 + 1] = sy;
+                my_smooth_normals[(ei * 3 + lv) * 3 + 2] = sz;
             }
         }
     }
 
 public:
-    NumpyMeshDataSource(py::array_t<double> nodes, py::array_t<int32_t> elements, std::optional<py::array_t<double>> normals)
+    NumpyMeshDataSource(
+        py::array_t<double> nodes, 
+        py::array_t<int32_t> elements, 
+        std::optional<py::array_t<double>> normals,
+        double crease_angle_deg = 30.0
+    )
         : my_nodes(nodes), my_elements(elements), my_normals(normals) {
 
         if (nodes.ndim() != 2 || nodes.shape(1) != 3)
@@ -106,7 +154,7 @@ public:
             }
         }
         else {
-            compute_normals();
+            compute_normals(crease_angle_deg);
             use_computed_normals = true;
         }
 
@@ -244,18 +292,25 @@ public:
         if (!my_element_ids.Contains(ElementId))
             return Standard_False;
 
-        auto elems_proxy = my_elements.unchecked<2>();
         Standard_Integer elem_idx = ElementId - 1;
+        Standard_Integer local_idx = ranknode - 1;  // ranknode is 1-based
 
-        Standard_Integer node_idx = elems_proxy(elem_idx, ranknode - 1);
+        if (local_idx < 0 || local_idx >= 3)
+            return Standard_False;
 
         if (use_computed_normals) {
-            nx = my_node_normals[node_idx * 3 + 0];
-            ny = my_node_normals[node_idx * 3 + 1];
-            nz = my_node_normals[node_idx * 3 + 2];
+            // Use precomputed crease-angle-aware smooth normals
+            Standard_Integer base = (elem_idx * 3 + local_idx) * 3;
+            nx = my_smooth_normals[base + 0];
+            ny = my_smooth_normals[base + 1];
+            nz = my_smooth_normals[base + 2];
             return Standard_True;
         }
         else if (my_normals.has_value()) {
+            // Use externally provided per-vertex normals
+            auto elems_proxy = my_elements.unchecked<2>();
+            Standard_Integer node_idx = elems_proxy(elem_idx, local_idx);
+
             auto norms_proxy = my_normals->unchecked<2>();
             nx = norms_proxy(node_idx, 0);
             ny = norms_proxy(node_idx, 1);
@@ -282,15 +337,18 @@ public:
 IMPLEMENT_STANDARD_RTTIEXT(NumpyMeshDataSource, MeshVS_DataSource)
 
 
-void assign_numpy_datasource_to_mesh(uintptr_t occ_mesh_ptr,
+void assign_numpy_datasource_to_mesh(
+    uintptr_t occ_mesh_ptr,
     py::array_t<double> nodes,
     py::array_t<int32_t> elements,
-    std::optional<py::array_t<double>> normals) {
+    std::optional<py::array_t<double>> normals,
+    double crease_angle_deg
+) {
 
     auto* mesh = reinterpret_cast<MeshVS_Mesh*>(occ_mesh_ptr);
     if (!mesh) throw std::runtime_error("Invalid MeshVS_Mesh pointer!");
 
-    Handle(NumpyMeshDataSource) custom_ds = new NumpyMeshDataSource(nodes, elements, normals);
+    Handle(NumpyMeshDataSource) custom_ds = new NumpyMeshDataSource(nodes, elements, normals, crease_angle_deg);
 
     mesh->SetDataSource(custom_ds);
 }
