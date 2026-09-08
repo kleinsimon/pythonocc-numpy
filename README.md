@@ -9,6 +9,12 @@ It links via pybind11 directly against OCC, so the official pythonocc-core binar
 # Install
 There are some wheels provided under "Releases". Install them via pip.
 
+Alternatively, you can use the github page as a link source for pip:
+
+```
+pip install --no-index --find-links https://kleinsimon.github.io/pythonocc-numpy/ occ_numpy_bridge
+```
+
 # Building
 
 since pythonocc-core is only available via conda-forge, you need conda / miniforge to build the wheel.
