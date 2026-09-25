@@ -7,7 +7,31 @@ It allows the fast transfer of vertices and colors for selected OpenCascade clas
 It links via pybind11 directly against OCC, so the official pythonocc-core binaries can be used.
 
 # Install
+
+## conda (recommended)
+
+The package is published as a conda package on the [prefix.dev channel `occ-numpy`](https://prefix.dev/channels/occ-numpy).
+Builds exist for OpenCASCADE 7.9 and 8.0; conda picks the one matching the installed `pythonocc-core` automatically.
+
+```bash
+conda install -c conda-forge -c https://prefix.dev/occ-numpy occ-numpy-bridge
+```
+
+or in an `environment.yml`:
+
+```yaml
+channels:
+  - conda-forge
+  - https://prefix.dev/occ-numpy
+dependencies:
+  - pythonocc-core
+  - occ-numpy-bridge
+```
+
+## pip
+
 There are some wheels provided under "Releases". Install them via pip.
+A wheel only works with the exact OpenCASCADE version it was built against, so prefer the conda package.
 
 # Building
 
@@ -26,6 +50,19 @@ python -m build --wheel
 # install wheel
 pip install dist/occ_numpy_bridge*.whl
 ```
+
+The conda packages are built with [rattler-build](https://rattler-build.prefix.dev) from `recipe/`:
+
+```bash
+# all Python x OpenCASCADE combinations from recipe/variants.yaml, packages land in output/
+rattler-build build --recipe recipe/recipe.yaml -c conda-forge
+
+# only one Python version
+rattler-build build --recipe recipe/recipe.yaml -c conda-forge --variant python=3.12
+```
+
+On Windows keep the output directory short (e.g. `--output-dir C:\cb`), otherwise header paths in the
+build environment exceed the 260 character limit.
 
 # Usage
 

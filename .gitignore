@@ -365,6 +365,8 @@ FodyWeavers.xsd
 .idea/
 build/
 dist/
+# rattler-build default output dir
+output/
 
 *.pyd
 

@@ -1,0 +1,66 @@
+name: Build and Upload Conda Packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
+    steps:
+      - name: Checkout Sources
+        uses: actions/checkout@v7
+
+      - name: Take version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: echo "OCC_BRIDGE_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      # builds every python x occt combination from recipe/variants.yaml and runs the tests
+      - name: Build conda packages
+        uses: prefix-dev/rattler-build-action@v0.2.39
+        with:
+          recipe-path: recipe/recipe.yaml
+          artifact-name: conda-${{ matrix.os }}
+          build-args: -c conda-forge
+
+  upload:
+    name: Upload to prefix.dev/occ-numpy
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    # trusted publishing: no API key, prefix.dev verifies the GitHub OIDC token
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v8
+        with:
+          pattern: conda-*
+          path: output
+          merge-multiple: true
+
+      - name: Setup rattler-build
+        uses: prefix-dev/rattler-build-action@v0.2.39
+        with:
+          setup-only: true
+
+      - name: Upload
+        shell: bash
+        run: |
+          for pkg in $(find output -type f -name "*.conda"); do
+            echo "Uploading ${pkg}"
+            rattler-build upload prefix -c occ-numpy "${pkg}"
+          done
