@@ -10,13 +10,13 @@ It links via pybind11 directly against OCC, so the official pythonocc-core binar
 
 ## conda (recommended)
 
-The package is published as a conda package on the [prefix.dev channel `occ-numpy`](https://prefix.dev/channels/occ-numpy).
+The package is published as a conda package on the [prefix.dev channel `kleinsimon/occ-numpy`](https://prefix.dev/channels/@kleinsimon/occ-numpy).
 Builds exist for OpenCASCADE 7.9.3 and 8.0.1 (the versions of the current `pythonocc-core` 7.9.3 and 8.0.1 packages on conda-forge).
 Each build is pinned to its exact OCCT version, and conda picks the one matching the installed `pythonocc-core` automatically.
 Other OCCT versions (e.g. `pythonocc-core` 7.9.0) have no matching build.
 
 ```bash
-conda install -c conda-forge -c https://prefix.dev/occ-numpy occ-numpy-bridge
+conda install -c conda-forge -c https://prefix.dev/kleinsimon/occ-numpy occ-numpy-bridge
 ```
 
 or in an `environment.yml`:
@@ -24,7 +24,7 @@ or in an `environment.yml`:
 ```yaml
 channels:
   - conda-forge
-  - https://prefix.dev/occ-numpy
+  - https://prefix.dev/kleinsimon/occ-numpy
 dependencies:
   - pythonocc-core
   - occ-numpy-bridge

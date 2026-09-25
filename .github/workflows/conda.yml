@@ -38,7 +38,7 @@ jobs:
           build-args: -c conda-forge
 
   upload:
-    name: Upload to prefix.dev/occ-numpy
+    name: Upload to prefix.dev/kleinsimon/occ-numpy
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
@@ -68,5 +68,6 @@ jobs:
           for pkg in $(find output -type f -name "*.conda"); do
             echo "Uploading ${pkg}"
             # --skip-existing lets a re-run after a partial upload finish instead of failing
-            rattler-build upload prefix -c occ-numpy --skip-existing "${pkg}"
+            # the channel lives in the user namespace, so its name carries the owner
+            rattler-build upload prefix -c kleinsimon/occ-numpy --skip-existing "${pkg}"
           done
