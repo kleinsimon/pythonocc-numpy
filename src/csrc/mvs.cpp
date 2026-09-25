@@ -2,6 +2,7 @@
 #include <pybind11/numpy.h>
 #include <Quantity_Color.hxx>
 #include <MeshVS_NodalColorPrsBuilder.hxx>
+#include <NCollection_DataMap.hxx>
 #include <iostream>
 #include <algorithm>
 #include <optional>
@@ -70,8 +71,8 @@ static std::tuple<py::array_t<int32_t>, py::array_t<double>> read_nodal_color_pr
         throw std::runtime_error("Invalid MeshVS_NodalColorPrsBuilder pointer!");
     }
 
-    auto map = builder->GetColors();
-    int num_verts = map.Size();
+    const auto& map = builder->GetColors();
+    int num_verts = static_cast<int>(map.Size());
 
     auto np_colors = py::array_t<double>({ num_verts, 3 });
     auto np_node_ids = py::array_t<int32_t>({ num_verts });
@@ -82,7 +83,7 @@ static std::tuple<py::array_t<int32_t>, py::array_t<double>> read_nodal_color_pr
     py::buffer_info buf_ids = np_node_ids.request();
     int32_t* ptr_ids = static_cast<int32_t*>(buf_ids.ptr);
 
-    MeshVS_DataMapIteratorOfDataMapOfIntegerColor it(map);
+    NCollection_DataMap<int, Quantity_Color>::Iterator it(map);
 
     for (int i = 0; it.More(); it.Next(), i++) {
         ptr_ids[i] = it.Key() - 1;

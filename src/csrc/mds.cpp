@@ -4,12 +4,22 @@
 #include <MeshVS_EntityType.hxx>
 #include <MeshVS_Mesh.hxx>
 #include <TColStd_PackedMapOfInteger.hxx>
-#include <TColStd_Array1OfReal.hxx>
-#include <TColStd_Array1OfInteger.hxx>
+#include <NCollection_Array1.hxx>
+#include <Standard_Version.hxx>
 #include <Standard_Type.hxx>
 #include <optional>
 
 namespace py = pybind11;
+
+// OCCT 8 replaced the MeshVS_HArray1OfSequenceOfInteger class by a (deprecated) NCollection typedef
+#if OCC_VERSION_HEX >= 0x080000
+#include <NCollection_HArray1.hxx>
+#include <NCollection_Sequence.hxx>
+using NumpyDS_HArray1OfSequenceOfInteger = NCollection_HArray1<NCollection_Sequence<int>>;
+#else
+#include <MeshVS_HArray1OfSequenceOfInteger.hxx>
+using NumpyDS_HArray1OfSequenceOfInteger = MeshVS_HArray1OfSequenceOfInteger;
+#endif
 
 class NumpyMeshDataSource : public MeshVS_DataSource {
     DEFINE_STANDARD_RTTIEXT(NumpyMeshDataSource, MeshVS_DataSource)
@@ -169,7 +179,7 @@ public:
 
     Standard_Boolean GetGeom(const Standard_Integer ID,
         const Standard_Boolean IsElement,
-        TColStd_Array1OfReal& Coords,
+        NCollection_Array1<double>& Coords,
         Standard_Integer& NbNodes,
         MeshVS_EntityType& Type) const override {
 
@@ -224,7 +234,7 @@ public:
     }
 
     Standard_Boolean GetNodesByElement(const Standard_Integer ID,
-        TColStd_Array1OfInteger& NodeIDs,
+        NCollection_Array1<int>& NodeIDs,
         Standard_Integer& NbNodes) const override {
         if (!my_element_ids.Contains(ID)) return Standard_False;
 
@@ -250,7 +260,7 @@ public:
     Standard_Boolean Get3DGeom(
         const Standard_Integer /*ID*/,
         Standard_Integer&,
-        Handle(MeshVS_HArray1OfSequenceOfInteger)& /*Data*/) const override {
+        Handle(NumpyDS_HArray1OfSequenceOfInteger)& /*Data*/) const override {
         return Standard_False;
     }
 
