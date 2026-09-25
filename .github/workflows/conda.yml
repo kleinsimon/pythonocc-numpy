@@ -29,6 +29,8 @@ jobs:
       - name: Build conda packages
         uses: prefix-dev/rattler-build-action@v0.2.39
         with:
+          # the action's default is older; pin the version the recipe was tested with
+          rattler-build-version: v0.76.1
           recipe-path: recipe/recipe.yaml
           artifact-name: conda-${{ matrix.os }}
           build-args: -c conda-forge
@@ -55,6 +57,7 @@ jobs:
       - name: Setup rattler-build
         uses: prefix-dev/rattler-build-action@v0.2.39
         with:
+          rattler-build-version: v0.76.1
           setup-only: true
 
       - name: Upload
@@ -62,5 +65,6 @@ jobs:
         run: |
           for pkg in $(find output -type f -name "*.conda"); do
             echo "Uploading ${pkg}"
-            rattler-build upload prefix -c occ-numpy "${pkg}"
+            # --skip-existing lets a re-run after a partial upload finish instead of failing
+            rattler-build upload prefix -c occ-numpy --skip-existing "${pkg}"
           done
