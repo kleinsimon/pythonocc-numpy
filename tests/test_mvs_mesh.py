@@ -91,7 +91,7 @@ def test_datasource_assignment(valid_mesh_data):
     ptr = int(mesh.this.this)
 
     # Brücke aufrufen
-    occ_bridge.meshvs.assign_numpy_datasource_to_mesh(ptr, nodes, elements, None)
+    occ_bridge.meshvs.assign_numpy_datasource_to_mesh(ptr, nodes, elements, None, 30.0)
 
     # Prüfen, ob OpenCASCADE die DataSource intern registriert hat
     ds_handle = mesh.GetDataSource()
@@ -103,7 +103,7 @@ def test_id_mapping_1_based(valid_mesh_data):
     nodes, elements = valid_mesh_data
 
     mesh = MeshVS_Mesh()
-    occ_bridge.meshvs.assign_numpy_datasource_to_mesh(int(mesh.this.this), nodes, elements, None)
+    occ_bridge.meshvs.assign_numpy_datasource_to_mesh(int(mesh.this.this), nodes, elements, None, 30.0)
     ds = mesh.GetDataSource()
 
     # 1. Knoten-IDs prüfen
@@ -124,7 +124,7 @@ def test_get_geom_coordinates(valid_mesh_data):
     nodes, elements = valid_mesh_data
 
     mesh = MeshVS_Mesh()
-    occ_bridge.meshvs.assign_numpy_datasource_to_mesh(int(mesh.this.this), nodes, elements, None)
+    occ_bridge.meshvs.assign_numpy_datasource_to_mesh(int(mesh.this.this), nodes, elements, None, 30.0)
     ds = mesh.GetDataSource()
 
     # OCC Arrays sind zwingend 1-basiert
@@ -151,7 +151,7 @@ def test_invalid_nodes_shape():
     elements = np.array([[0, 1, 2]], dtype=np.int32)
 
     with pytest.raises(RuntimeError, match="Nodes must be shape"):
-        occ_bridge.meshvs.assign_numpy_datasource_to_mesh(ptr, bad_nodes, elements, None)
+        occ_bridge.meshvs.assign_numpy_datasource_to_mesh(ptr, bad_nodes, elements, None, 30.0)
 
 
 def test_invalid_elements_shape(valid_mesh_data):
@@ -164,7 +164,7 @@ def test_invalid_elements_shape(valid_mesh_data):
     bad_elements = np.array([[0, 1, 2, 3]], dtype=np.int32)
 
     with pytest.raises(RuntimeError, match="Elements must be shape"):
-        occ_bridge.meshvs.assign_numpy_datasource_to_mesh(ptr, nodes, bad_elements, None)
+        occ_bridge.meshvs.assign_numpy_datasource_to_mesh(ptr, nodes, bad_elements, None, 30.0)
 
 def test_mesh_helper():
     verts, faces, colors = generate_terrain_mesh(100)

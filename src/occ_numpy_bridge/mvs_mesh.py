@@ -19,7 +19,7 @@ class MeshVS_Mesh_Helper(OCC_Wrapper_Base):
     _OCC_CLS = MeshVS_Mesh
 
     @classmethod
-    def assign_numpy_data_source(cls, mesh: MeshVS_Mesh, vertices: np.ndarray, faces: np.ndarray, normals: np.ndarray = None) -> MeshVS_Mesh:
+    def assign_numpy_data_source(cls, mesh: MeshVS_Mesh, vertices: np.ndarray, faces: np.ndarray, normals: np.ndarray = None, crease_angle=30.0) -> MeshVS_Mesh:
         """
         Assigns a data source based on NumPy arrays to the provided MeshVS_Mesh instance.
 
@@ -46,7 +46,7 @@ class MeshVS_Mesh_Helper(OCC_Wrapper_Base):
 
         mesh_ptr_int = cls._get_cpp_pointer(mesh)
 
-        occ_bridge.meshvs.assign_numpy_datasource_to_mesh(mesh_ptr_int, vertices, faces, normals)
+        occ_bridge.meshvs.assign_numpy_datasource_to_mesh(mesh_ptr_int, vertices, faces, normals, crease_angle)
 
         return mesh
 
@@ -100,7 +100,7 @@ class MeshVS_Mesh_Helper(OCC_Wrapper_Base):
         return occ_bridge.meshvs.read_numpy_datasource_normals(ds_ptr_int)
 
     @classmethod
-    def create_mesh_with_numpy_source(cls, vertices: np.ndarray, faces: np.ndarray, normals: np.ndarray = None) -> MeshVS_Mesh:
+    def create_mesh_with_numpy_source(cls, vertices: np.ndarray, faces: np.ndarray, normals: np.ndarray = None, crease_angle=30.0) -> MeshVS_Mesh:
         """
         Create a mesh object with data sourced from numpy arrays.
 
@@ -115,4 +115,4 @@ class MeshVS_Mesh_Helper(OCC_Wrapper_Base):
         :return: An instance of MeshVS_Mesh containing the mesh created from the
             provided data.
         """
-        return cls.assign_numpy_data_source(MeshVS_Mesh(), vertices, faces, normals)
+        return cls.assign_numpy_data_source(mesh=MeshVS_Mesh(), vertices=vertices, faces=faces, normals=normals, crease_angle=crease_angle)

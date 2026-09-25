@@ -1,0 +1,72 @@
+name: Build and Upload Conda Packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+  # PRs build and test every variant; the upload job only runs for tags
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
+    steps:
+      - name: Checkout Sources
+        uses: actions/checkout@v7
+
+      - name: Take version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: echo "OCC_BRIDGE_VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      # builds every python x occt combination from recipe/variants.yaml and runs the tests
+      - name: Build conda packages
+        uses: prefix-dev/rattler-build-action@v0.2.39
+        with:
+          # the action's default is older; pin the version the recipe was tested with
+          rattler-build-version: v0.76.1
+          recipe-path: recipe/recipe.yaml
+          artifact-name: conda-${{ matrix.os }}
+          build-args: -c conda-forge
+
+  upload:
+    name: Upload to prefix.dev/occ-numpy
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    # trusted publishing: no API key, prefix.dev verifies the GitHub OIDC token
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v8
+        with:
+          pattern: conda-*
+          path: output
+          merge-multiple: true
+
+      - name: Setup rattler-build
+        uses: prefix-dev/rattler-build-action@v0.2.39
+        with:
+          rattler-build-version: v0.76.1
+          setup-only: true
+
+      - name: Upload
+        shell: bash
+        run: |
+          for pkg in $(find output -type f -name "*.conda"); do
+            echo "Uploading ${pkg}"
+            # --skip-existing lets a re-run after a partial upload finish instead of failing
+            rattler-build upload prefix -c occ-numpy --skip-existing "${pkg}"
+          done

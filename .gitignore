@@ -365,5 +365,10 @@ FodyWeavers.xsd
 .idea/
 build/
 dist/
+# rattler-build default output dir
+output/
 
 *.pyd
+
+# Claude Code
+CLAUDE.md

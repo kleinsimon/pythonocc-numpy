@@ -1,0 +1,73 @@
+schema_version: 1
+
+context:
+  # set by CI from the git tag (v0.2.0 -> 0.2.0); local builds fall back to a dev version
+  version: ${{ env.get("OCC_BRIDGE_VERSION", default="0.0.0.dev0") }}
+
+package:
+  name: occ-numpy-bridge
+  version: ${{ version }}
+
+source:
+  path: ..
+
+build:
+  number: 0
+  script:
+    env:
+      # the copied source carries no .git, so setuptools-scm needs the version handed in
+      SETUPTOOLS_SCM_PRETEND_VERSION: ${{ version }}
+      # the Visual Studio generator trips over mixed VS/toolset installs; Ninja uses the activated compiler
+      CMAKE_GENERATOR: Ninja
+    content:
+      - if: win
+        then:
+          # the vs2022 activation presets these for the Visual Studio generator; Ninja rejects them
+          - set CMAKE_GENERATOR_PLATFORM=
+          - set CMAKE_GENERATOR_TOOLSET=
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - cmake >=3.18
+    - ninja
+  host:
+    - python
+    - pip
+    - scikit-build-core >=0.8
+    - setuptools-scm
+    - pybind11 >=2.10
+    - pybind11-stubgen
+    - numpy
+    # version comes from variants.yaml; occt's run_exports pin the package to
+    # "occt >=X.Y.Z,<X.Y.(Z+1)", so the solver picks the build matching the user's OCCT
+    - occt
+    - pythonocc-core
+    - if: linux
+      then: libgl-devel
+  run:
+    - python
+    - numpy >=1.21
+    - pythonocc-core
+
+tests:
+  - python:
+      imports:
+        - occ_numpy_bridge
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - pytest
+    script:
+      - pytest tests -q -p no:cacheprovider
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Fast bridge between pythonocc-core and NumPy
+  homepage: https://github.com/kleinsimon/pythonocc-numpy
+  repository: https://github.com/kleinsimon/pythonocc-numpy
