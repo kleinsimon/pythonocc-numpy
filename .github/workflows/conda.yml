@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+  # PRs build and test every variant; the upload job only runs for tags
+  pull_request:
   workflow_dispatch:
 
 jobs:
