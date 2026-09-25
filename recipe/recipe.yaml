@@ -45,8 +45,6 @@ requirements:
     # "occt >=X.Y.Z,<X.Y.(Z+1)", so the solver picks the build matching the user's OCCT
     - occt
     - pythonocc-core
-    - if: linux
-      then: libgl-devel
   run:
     - python
     - numpy >=1.21

@@ -30,7 +30,6 @@ target_link_libraries(occ_bridge PRIVATE
     TKernel
     TKService
     TKV3d
-    TKOpenGl
     TKMeshVS
 )
 
